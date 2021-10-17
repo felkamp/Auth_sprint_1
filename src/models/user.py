@@ -1,14 +1,37 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from src import db
+from flask_security import UserMixin, RoleMixin
+from src.db.postgres import db
 
 
-# class User(db.Model):
-#     __tablename__ = 'users'
-#
-#     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-#     login = db.Column(db.String, unique=True, nullable=False)
-#     password = db.Column(db.String, nullable=False)
-#
-#     def __repr__(self):
-#         return f'<User {self.login}>'
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('users.id')),
+    db.Column('role_id', UUID(as_uuid=True), db.ForeignKey('roles.id'))
+)
+
+
+class User(db.Model, UserMixin):
+    """Model to represent User data."""
+    __tablename__ = 'users'
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    active = db.Column(db.Boolean())
+    roles = db.relationship(
+        'Role', secondary=roles_users,
+        backref=db.backref('users', lazy='dynamic'),
+    )
+
+    def __repr__(self):
+        return f'<User {self.login}>'
+
+
+class Role(db.Model, RoleMixin):
+    """Model to represent Role data related with users."""
+    __tablename__ = 'roles'
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+
