@@ -6,8 +6,8 @@ from src.db.postgres import db
 
 roles_users = db.Table(
     'roles_users',
-    db.Column('user_id', db.Integer(), db.ForeignKey('users.id')),
-    db.Column('role_id', db.Integer(), db.ForeignKey('roles.id'))
+    db.Column('user_id', UUID(as_uuid=True), db.ForeignKey('users.id')),
+    db.Column('role_id', UUID(as_uuid=True), db.ForeignKey('roles.id'))
 )
 
 
@@ -29,6 +29,7 @@ class User(db.Model, UserMixin):
 
 
 class Role(db.Model, RoleMixin):
+    """Model to represent Role data related with users."""
     __tablename__ = 'roles'
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = db.Column(db.String(80), unique=True, nullable=False)
