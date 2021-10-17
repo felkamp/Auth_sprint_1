@@ -1,9 +1,7 @@
 from src import app
-from src.db.postgres import init_db
 
 
 def main():
-    init_db(app)
     app.run(debug=True)
 
 

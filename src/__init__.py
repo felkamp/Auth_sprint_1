@@ -5,7 +5,7 @@ from flask_security import Security, SQLAlchemyUserDatastore
 
 from .config import settings
 from src.account.views import account
-from src.db.postgres import db
+from src.db.postgres import db, init_db
 from src.models.user import User, Role
 
 
@@ -25,7 +25,8 @@ def create_app(config=None):
     app.config['SECRET_KEY'] = settings.SECRET_KEY
     app.config['SECURITY_PASSWORD_SALT'] = settings.SECURITY_PASSWORD_SALT
 
-    security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
+    init_db(app)
+    Security(app, SQLAlchemyUserDatastore(db, User, Role))
 
     app.register_blueprint(account)
 

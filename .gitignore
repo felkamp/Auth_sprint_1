@@ -38,7 +38,7 @@ coverage.xml
 .hypothesis/
 
 # dotenv
-src/.env
+.env
 .env_test
 
 # virtualenv
