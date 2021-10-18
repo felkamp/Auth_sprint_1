@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from flask import Flask
 from flask_login import LoginManager
 from flask_security import Security, SQLAlchemyUserDatastore
@@ -23,6 +25,8 @@ def create_app(config=None):
     app.config['SECRET_KEY'] = settings.SECRET_KEY
     app.config['SECURITY_PASSWORD_SALT'] = settings.SECURITY_PASSWORD_SALT
     app.config["JWT_SECRET_KEY"] = settings.JWT_SECRET_KEY
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
 
     init_db(app)
     init_redis_db(app)

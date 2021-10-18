@@ -29,13 +29,13 @@ class Login(Resource):
         error_message = 'Email or password is incorrect'
 
         email = args.get('email')
-        is_user_authenticated = auth_service.is_user_authenticated(
+        authenticated_user = auth_service.authenticate_user(
             email=email,
             password=args.get('password')
         )
-        if not is_user_authenticated:
+        if not authenticated_user:
             return abort(400, error_message)
-        jwt_tokens = auth_service.get_jwt_tokens(email)
+        jwt_tokens = auth_service.get_jwt_tokens(authenticated_user.id)
         auth_service.save_refresh_token_in_redis(
             jwt_tokens.get('refresh')
         )
@@ -57,8 +57,8 @@ class Logout(Resource):
         if token_payload.get('type') == 'refresh':
             return abort(401, 'Incorrect JWT token type')
 
-        user_email = token_payload.get('sub')
-        auth_service.delete_all_refresh_tokens(user_email)
+        user_id = token_payload.get('sub')
+        auth_service.delete_all_refresh_tokens(user_id)
 
         return {
             'msg': 'Successful logout',
