@@ -33,7 +33,7 @@ class AuthService:
         return user
 
     def save_refresh_token_in_redis(
-            self, token: str,
+            self, token: str, user_agent: str
     ):
         """Save refresh token in Redis db."""
         token_payload = decode_token(token)
@@ -42,7 +42,7 @@ class AuthService:
         expired_seconds_time = int(expired - time.time())
 
         redis_db.setex(
-            name=f'{user_id}:{expired}',
+            name=f'{user_id}:{user_agent}',
             time=expired_seconds_time,
             value=token
         )
@@ -52,6 +52,10 @@ class AuthService:
         keys = redis_db.keys(f'*{user_id}*')
         if keys:
             redis_db.delete(*keys)
+
+    def delete_user_refresh_token(self, user_id: str, user_agent: str):
+        """Delete user refresh token from Redis db."""
+        redis_db.delete(f'{user_id}:{user_agent}')
 
     def get_jwt_tokens(self, user_id: str) -> dict:
         """Get access and refresh tokens for authenticate user."""

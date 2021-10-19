@@ -1,7 +1,8 @@
-from flask import Blueprint, abort
+from http import HTTPStatus
 
+from flask import Blueprint, abort
 from flask_restx import Api, Resource, reqparse
-from flask_jwt_extended import decode_token
+from flask_jwt_extended import jwt_required, get_jwt
 
 from src.services import AuthService
 
@@ -25,7 +26,9 @@ class Login(Resource):
             'password', required=True,
             type=str, help="Password cannot be blank!",
         )
+        parser.add_argument('User-Agent', location='headers')
         args = parser.parse_args()
+
         error_message = 'Email or password is incorrect'
 
         email = args.get('email')
@@ -34,10 +37,13 @@ class Login(Resource):
             password=args.get('password')
         )
         if not authenticated_user:
-            return abort(400, error_message)
+            return abort(HTTPStatus.BAD_REQUEST, error_message)
         jwt_tokens = auth_service.get_jwt_tokens(authenticated_user.id)
+
+        user_agent = args.get('User-Agent')
         auth_service.save_refresh_token_in_redis(
-            jwt_tokens.get('refresh')
+            jwt_tokens.get('refresh'),
+            user_agent
         )
 
         return jwt_tokens
@@ -46,20 +52,18 @@ class Login(Resource):
 @api.route('/logout')
 class Logout(Resource):
     """Endpoint to user logout."""
+    @jwt_required()
     def post(self):
         """Logout user with deleting all refresh tokens."""
         parser = reqparse.RequestParser()
-        parser.add_argument('Authorization', location='headers')
+        parser.add_argument('User-Agent', location='headers')
         args = parser.parse_args()
-        jwt_token = args.get('Authorization').split(' ')[-1]
 
-        token_payload = decode_token(jwt_token)
-        if token_payload.get('type') == 'refresh':
-            return abort(401, 'Incorrect JWT token type')
+        token_payload = get_jwt()
 
         user_id = token_payload.get('sub')
-        auth_service.delete_all_refresh_tokens(user_id)
-
+        user_agent = args.get('User-Agent')
+        auth_service.delete_user_refresh_token(user_id, user_agent)
         return {
             'msg': 'Successful logout',
         }
