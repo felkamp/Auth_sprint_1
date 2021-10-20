@@ -1,19 +1,19 @@
-import redis
+from datetime import timedelta
+
 from flask import Flask
 from flask_login import LoginManager
 from flask_security import Security, SQLAlchemyUserDatastore
+from flask_jwt_extended import JWTManager
 
 from .config import settings
 from src.account.views import account
+from src.account.views import api as auth_api
 from src.db.postgres import db, init_db
+from src.db.redis import init_redis_db
 from src.models.user import User, Role
 
 
 login_manager = LoginManager()
-
-redis_db = redis.Redis(host=settings.REDIS_HOST,
-                       port=settings.REDIS_PORT,
-                       db=settings.REDIS_DB)
 
 
 def create_app(config=None):
@@ -24,11 +24,18 @@ def create_app(config=None):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = settings.SECRET_KEY
     app.config['SECURITY_PASSWORD_SALT'] = settings.SECURITY_PASSWORD_SALT
+    app.config["JWT_SECRET_KEY"] = settings.JWT_SECRET_KEY
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
 
     init_db(app)
+    init_redis_db(app)
     Security(app, SQLAlchemyUserDatastore(db, User, Role))
 
-    app.register_blueprint(account)
+    # Setup the Flask-JWT-Extended extension
+    JWTManager(app)
+
+    app.register_blueprint(account, url_prefix='/api/v1')
 
     return app
 

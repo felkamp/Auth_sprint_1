@@ -1,6 +1,20 @@
 import redis
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from src.config import settings
+
+
+redis_db = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+        )
+
+
+def init_redis_db(app: Flask):
+    if not hasattr(app, 'redis_db'):
+        app.redis_db = redis_db
+    return app.redis_db
+
 
 
 # python shell
