@@ -1,24 +1,19 @@
 import time
 from typing import Optional
 
-
-from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import verify_password
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     decode_token,
 )
 
-from src.db.postgres import db
 from src.db.redis import redis_db
-from src.models import User, Role
-
-
-USER_DATASTORE = SQLAlchemyUserDatastore(db, User, Role)
+from src.models.user import USER_DATASTORE, User
 
 
 class AuthService:
     """Auth service for users."""
+
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Check user credentials - login and password.
 
