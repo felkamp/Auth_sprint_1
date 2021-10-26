@@ -60,3 +60,9 @@ class AuthService:
             'access': access_token,
             'refresh': refresh_token,
         }
+
+    def refresh_jwt_tokens(self, token: str, user_id: str, user_agent: str) -> Optional[dict]:
+        """Get user refresh token from Redis db."""
+        token_in_redis: Optional[str] = redis_db.get(f'{user_id}:{user_agent}')
+        if token == token_in_redis:
+            return self.get_jwt_tokens(user_id=user_id)
