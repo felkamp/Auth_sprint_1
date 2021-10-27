@@ -35,6 +35,9 @@ class User(db.Model, AuditMixin, UserMixin):
         'Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'),
     )
+    auth_logs = db.relationship(
+        'AuthorizationUserLog', backref='user', lazy=True
+    )
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -47,6 +50,18 @@ class Role(db.Model, AuditMixin, RoleMixin):
     name = db.Column(db.String(80), unique=True, nullable=False)
     permissions = db.Column(db.Integer)
     description = db.Column(db.String(255), nullable=True)
+
+
+class AuthorizationUserLog(db.Model, AuditMixin):
+    """Model to represent log about successful user authorization."""
+    __tablename__ = 'auth_user_logs'
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey('users.id'),
+        nullable=False,
+    )
+    device = db.Column(db.String(255), nullable=True)
 
 
 USER_DATASTORE = SQLAlchemyUserDatastore(db, User, Role)

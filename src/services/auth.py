@@ -1,6 +1,7 @@
 import time
 from typing import Optional
 
+from marshmallow import Schema, fields
 from flask_security.utils import verify_password
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
@@ -8,7 +9,15 @@ from flask_jwt_extended import (
 )
 
 from src.db.redis import redis_db
-from src.models.user import USER_DATASTORE, User
+from src.models.user import USER_DATASTORE, User, AuthorizationUserLog
+from src.db.postgres import db
+
+
+class AuthUserLogSchema(Schema):
+    """Schema to represent AuthorizationUserLog model."""
+    id = fields.UUID()
+    device = fields.Str()
+    logged_at = fields.DateTime(attribute='created_at')
 
 
 class AuthService:
@@ -65,3 +74,17 @@ class AuthService:
             'access': access_token,
             'refresh': refresh_token,
         }
+
+    def create_user_auth_log(self, user_id: str, device: str):
+        """Create AuthorizationUserLog record after successful user auth."""
+        auth_log = AuthorizationUserLog(user_id=user_id, device=device)
+        db.session.add(auth_log)
+        db.session.commit()
+
+    def get_auth_user_logs(self, user_id: str):
+        """Get user login history information."""
+        user_auth_logs = AuthorizationUserLog.query.filter_by(user_id=user_id)
+        auth_user_log_schema = AuthUserLogSchema(
+            many=True, only=('device', 'logged_at')
+        )
+        return auth_user_log_schema.dump(user_auth_logs)
