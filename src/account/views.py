@@ -47,8 +47,24 @@ class Login(Resource):
             jwt_tokens.get('refresh'),
             user_agent
         )
+        auth_service.create_user_auth_log(
+            user_id=authenticated_user.id, device=user_agent
+        )
 
         return jwt_tokens
+
+
+@api.route('/login_history')
+class LoginHistory(Resource):
+    """Endpoint to represent user login history."""
+
+    @jwt_required()
+    def get(self):
+        """Get user login history info."""
+        token_payload = get_jwt()
+        user_id = token_payload.get('sub')
+        user_logs = auth_service.get_auth_user_logs(user_id)
+        return user_logs
 
 
 @api.route('/logout')
