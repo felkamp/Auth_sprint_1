@@ -39,7 +39,7 @@ coverage.xml
 
 # dotenv
 .env
-.env_test
+.env.test
 
 # virtualenv
 venv/
