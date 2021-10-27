@@ -48,8 +48,24 @@ class Login(Resource):
             jwt_tokens.get('refresh'),
             user_agent
         )
+        auth_service.create_user_auth_log(
+            user_id=authenticated_user.id, device=user_agent
+        )
 
         return jwt_tokens
+
+
+@api.route('/login_history')
+class LoginHistory(Resource):
+    """Endpoint to represent user login history."""
+
+    @jwt_required()
+    def get(self):
+        """Get user login history info."""
+        token_payload = get_jwt()
+        user_id = token_payload.get('sub')
+        user_logs = auth_service.get_auth_user_logs(user_id)
+        return user_logs
 
 
 @api.route('/logout')
@@ -58,16 +74,26 @@ class Logout(Resource):
 
     @jwt_required()
     def post(self):
-        """Logout user with deleting all refresh tokens."""
+        """Logout user with deleting refresh tokens.
+
+        If 'is_full' request param exists, then delete all refresh tokens.
+        """
         parser = reqparse.RequestParser()
         parser.add_argument('User-Agent', location='headers')
+        parser.add_argument(
+            'is_full', required=False,
+            type=bool, help="Logout from all accounts!",
+        )
         args = parser.parse_args()
 
         token_payload = get_jwt()
 
         user_id = token_payload.get('sub')
         user_agent = args.get('User-Agent')
-        auth_service.delete_user_refresh_token(user_id, user_agent)
+        if args.get('is_full'):
+            auth_service.delete_all_refresh_tokens(user_id)
+        else:
+            auth_service.delete_user_refresh_token(user_id, user_agent)
         return {
             'msg': 'Successful logout',
         }

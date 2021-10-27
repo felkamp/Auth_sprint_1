@@ -8,6 +8,8 @@ from flask_jwt_extended import JWTManager
 from .config import settings
 from src.account.views import account
 from src.account.views import api as auth_api
+from src.admin.views import admin
+from src.admin.views import api as admin_api
 from src.db.postgres import db, init_db
 from src.db.redis import init_redis_db
 from src.models.user import User, Role
@@ -38,6 +40,7 @@ def create_app(config=None):
     JWTManager(app)
 
     app.register_blueprint(account, url_prefix='/api/v1')
+    app.register_blueprint(admin, url_prefix='/api/v1')
 
     return app
 
