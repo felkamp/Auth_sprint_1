@@ -4,7 +4,7 @@ from src.db.postgres import db
 from sqlalchemy import func
 
 
-class AdminService:
+class RoleService:
 
     def add_role(self, role_name: str, permissions: int, description: Optional[str]) -> None:
         role = Role(name=role_name, permissions=permissions, description=description)
@@ -33,4 +33,4 @@ class AdminService:
         db.session.commit()
 
 
-admin_service = AdminService()
+role_service = RoleService()
