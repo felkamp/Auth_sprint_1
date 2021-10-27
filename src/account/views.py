@@ -107,15 +107,16 @@ class Refresh(Resource):
     @jwt_required(refresh=True)
     def post(self):
         """Create new pair of access and refresh JWT tokens for user."""
-        token_payload = get_jwt()
-
         parser = reqparse.RequestParser()
         parser.add_argument('User-Agent', location='headers')
+        parser.add_argument('Authorization', location='headers')
         args = parser.parse_args()
 
-        token: str = token_payload.get('refresh')
-        user_id: str = token_payload.get('sub')
+        token: str = args.get('Authorization').split('Bearer ')[1]
         user_agent: str = args.get('User-Agent')
+
+        token_payload = get_jwt()
+        user_id: str = token_payload.get('sub')
 
         jwt_tokens: Optional[dict] = auth_service.refresh_jwt_tokens(
             token=token, user_id=user_id, user_agent=user_agent)
