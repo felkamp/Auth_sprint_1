@@ -2,7 +2,7 @@ import time
 from typing import Optional
 
 from marshmallow import Schema, fields
-from flask_security.utils import verify_password
+from flask_security.utils import verify_password, hash_password
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     decode_token,
@@ -11,6 +11,7 @@ from flask_jwt_extended import (
 from src.db.redis import redis_db
 from src.models.user import USER_DATASTORE, User, AuthorizationUserLog
 from src.db.postgres import db
+from src.constants import CredentialType
 
 
 class AuthUserLogSchema(Schema):
@@ -88,3 +89,39 @@ class AuthService:
             many=True, only=('device', 'logged_at')
         )
         return auth_user_log_schema.dump(user_auth_logs)
+
+    def _change_password(
+            self, user: User,
+            old_password: str, new_password: str) -> Optional[bool]:
+        """Change password for user."""
+        is_correct_password = verify_password(old_password, user.password)
+        if not is_correct_password:
+            return False
+        if len(new_password) < 8:
+            return False
+
+        user.password = hash_password(new_password)
+        db.session.commit()
+        return True
+
+    def _change_email(self, user, new_email) -> Optional[bool]:
+        """Change login for user."""
+        user_with_new_email = User.query.filter_by(email=new_email).first()
+        if user_with_new_email:
+            return False
+        user.email = new_email
+        db.session.commit()
+        return True
+
+    def change_user_credentials(
+            self, user_id, credential_type: str,
+            old_credential, new_credential):
+        """Change credentials for user - password or email."""
+        user = User.query.filter_by(id=user_id).first_or_404()
+        if credential_type == CredentialType.EMAIL.value:
+            return self._change_email(user, new_credential)
+        if credential_type == CredentialType.PASSWORD.value:
+            return self._change_password(user, old_credential, new_credential)
+
+
+auth_service = AuthService()

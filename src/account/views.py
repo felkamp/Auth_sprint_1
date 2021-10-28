@@ -5,12 +5,11 @@ from flask_restx import Api, Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt
 from flask_security.registerable import register_user
 
-from src.services.auth import AuthService
+from src.services.auth import auth_service
 from src.models.user import USER_DATASTORE
 
 account = Blueprint('account', __name__)
 api = Api(account)
-auth_service = AuthService()
 
 
 @api.route('/login')
@@ -65,6 +64,44 @@ class LoginHistory(Resource):
         user_id = token_payload.get('sub')
         user_logs = auth_service.get_auth_user_logs(user_id)
         return user_logs
+
+
+@api.route('/account_credentials')
+class CredentialsChange(Resource):
+
+    @jwt_required()
+    def put(self):
+        """Endpoint to change user credentials email or password."""
+        parser = reqparse.RequestParser()
+        parser.add_argument(
+            'credential_type', required=True,
+            type=str, help="Credential type to change!",
+        )
+        parser.add_argument(
+            'old', required=True,
+            type=str, help="Current credential cannot be blank!",
+        )
+        parser.add_argument(
+            'new', required=True,
+            type=str, help="New credential cannot be blank!",
+        )
+        args = parser.parse_args()
+        credential_type = args.get('credential_type')
+        old_credential = args.get('old')
+        new_credential = args.get('new')
+
+        token_payload = get_jwt()
+        user_id = token_payload.get('sub')
+
+        is_credential_chaged = auth_service.change_user_credentials(
+            user_id, credential_type, old_credential, new_credential,
+        )
+        if not is_credential_chaged:
+            return abort(
+                HTTPStatus.BAD_REQUEST,
+                'Credentials are incorrect.'
+            )
+        return {'msg': 'Credentials changed successfully.'}
 
 
 @api.route('/logout')
