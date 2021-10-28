@@ -88,3 +88,14 @@ class AuthService:
             many=True, only=('device', 'logged_at')
         )
         return auth_user_log_schema.dump(user_auth_logs)
+ 
+    def refresh_jwt_tokens(self, token: str, user_id: str, user_agent: str) -> Optional[dict]:
+        """Get user refresh token from Redis db."""
+        token_in_redis: Optional[bytes] = redis_db.get(
+            f'{user_id}:{user_agent}')
+        if token_in_redis:
+            self.delete_user_refresh_token(
+                user_id=user_id, user_agent=user_agent)
+            jwt_tokens: Optional[dict] = self.get_jwt_tokens(
+                user_id=user_id)
+            return jwt_tokens
