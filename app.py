@@ -1,9 +1,9 @@
 from src import app
 
 
-def main():
-    app.run(debug=True, host='0.0.0.0')
+def run():
+    app.run(host='0.0.0.0')
 
 
 if __name__ == '__main__':
-    main()
+    run()

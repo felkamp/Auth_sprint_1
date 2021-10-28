@@ -2,11 +2,11 @@ version: "3.9"
 
 services:
   auth:
-    build: .
-    image: auth
+    extends:
+      file: docker-compose.base.yml
+      service: auth
     container_name: auth_container
-    command: gunicorn wsgi_app:app -b 0.0.0.0:5000 --reload
-    user: web
+    command: python app.py
     ports:
       - "5000:5000"
     depends_on:
@@ -16,7 +16,9 @@ services:
       - .env
 
   db:
-    image: postgres:13
+    extends:
+      file: docker-compose.base.yml
+      service: db
     container_name: db_container
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -26,7 +28,9 @@ services:
       - .env
 
   redis:
-    image: redis:6.2.5
+    extends:
+      file: docker-compose.base.yml
+      service: redis
     container_name: redis_container
     ports:
       - "6379:6379"

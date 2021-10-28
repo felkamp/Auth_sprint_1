@@ -175,14 +175,13 @@ class Refresh(Resource):
         parser.add_argument('Authorization', location='headers')
         args = parser.parse_args()
 
-        token: str = args.get('Authorization').split('Bearer ')[1]
         user_agent: str = args.get('User-Agent')
 
         token_payload = get_jwt()
         user_id: str = token_payload.get('sub')
 
         jwt_tokens: Optional[dict] = auth_service.refresh_jwt_tokens(
-            token=token, user_id=user_id, user_agent=user_agent)
+            user_id=user_id, user_agent=user_agent)
 
         if not jwt_tokens:
             return abort(HTTPStatus.UNAUTHORIZED, 'Authentication Timeout!')
