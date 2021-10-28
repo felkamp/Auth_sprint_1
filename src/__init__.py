@@ -27,10 +27,10 @@ def create_app(config=None):
     init_redis_db(app)
 
     JWTManager(app)
-    Security(app, SQLAlchemyUserDatastore(db, User, Role))
+    Security(app, SQLAlchemyUserDatastore(db, User, Role), register_blueprint=False)
 
-    app.register_blueprint(account, url_prefix='/api/v1')
-    app.register_blueprint(admin, url_prefix='/api/v1')
+    app.register_blueprint(account)
+    app.register_blueprint(admin)
 
     return app
 

@@ -9,7 +9,7 @@ load_dotenv(dotenv_path)
 
 class Settings:
     """Project configuration."""
-    API_URL: str = os.getenv('API_URL', 'http://auth:5000/api/v1')
+    API_URL: str = os.getenv('API_URL', 'http://auth:5000')
     APP_NAME: str = os.getenv("APP_NAME", "Auth service")
     DEBUG: bool = bool(int(os.getenv("DEBUG", 0)))
     PROPAGATE_EXCEPTIONS: bool = bool(int(os.getenv("PROPAGATE_EXCEPTIONS", 1)))

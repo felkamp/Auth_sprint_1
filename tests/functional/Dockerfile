@@ -7,4 +7,4 @@ WORKDIR /opt/app
 RUN pip install -r requirements/tests.txt
 ADD . .
 
-ENTRYPOINT ["sh", "tests/functional/docker-entrypoint.sh"]
+ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
