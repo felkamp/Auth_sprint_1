@@ -61,10 +61,15 @@ class AuthService:
         """Delete user refresh token from Redis db."""
         redis_db.delete(f'{user_id}:{user_agent}')
 
-    def get_jwt_tokens(self, user_id: str) -> dict:
+    def get_jwt_tokens(self, user: User) -> dict:
         """Get access and refresh tokens for authenticate user."""
-        access_token = create_access_token(identity=user_id)
-        refresh_token = create_refresh_token(identity=user_id)
+        permissions = 0
+        for role in user.roles:
+            permissions |= role.permissions
+        permissions = {"perms": permissions}
+
+        access_token = create_access_token(identity=user.id, additional_claims=permissions)
+        refresh_token = create_refresh_token(identity=user.id)
         return {
             'access': access_token,
             'refresh': refresh_token,

@@ -41,7 +41,7 @@ class Login(Resource):
         )
         if not authenticated_user:
             return abort(HTTPStatus.FORBIDDEN, error_message)
-        jwt_tokens = auth_service.get_jwt_tokens(authenticated_user.id)
+        jwt_tokens = auth_service.get_jwt_tokens(authenticated_user)
 
         user_agent = args.get('User-Agent')
         auth_service.save_refresh_token_in_redis(
