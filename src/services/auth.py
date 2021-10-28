@@ -89,9 +89,8 @@ class AuthService:
         token_in_redis: Optional[bytes] = redis_db.get(
             f'{user_id}:{user_agent}')
         if token_in_redis:
-            if token == token_in_redis.decode('utf-8'):
-                self.delete_user_refresh_token(
-                    user_id=user_id, user_agent=user_agent)
-                jwt_tokens: Optional[dict] = self.get_jwt_tokens(
-                    user_id=user_id)
-                return jwt_tokens
+            self.delete_user_refresh_token(
+                user_id=user_id, user_agent=user_agent)
+            jwt_tokens: Optional[dict] = self.get_jwt_tokens(
+                user_id=user_id)
+            return jwt_tokens
