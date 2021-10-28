@@ -1,24 +1,23 @@
 import time
 from typing import Optional
 
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                decode_token)
+from flask_security.utils import hash_password, verify_password
 from marshmallow import Schema, fields
-from flask_security.utils import verify_password, hash_password
-from flask_jwt_extended import (
-    create_access_token, create_refresh_token,
-    decode_token,
-)
 
-from src.db.redis import redis_db
-from src.models.user import USER_DATASTORE, User, AuthorizationUserLog
-from src.db.postgres import db
 from src.constants import CredentialType
+from src.db.postgres import db
+from src.db.redis import redis_db
+from src.models.user import USER_DATASTORE, AuthorizationUserLog, User
 
 
 class AuthUserLogSchema(Schema):
     """Schema to represent AuthorizationUserLog model."""
+
     id = fields.UUID()
     device = fields.Str()
-    logged_at = fields.DateTime(attribute='created_at')
+    logged_at = fields.DateTime(attribute="created_at")
 
 
 class AuthService:
@@ -37,30 +36,26 @@ class AuthService:
             return None
         return user
 
-    def save_refresh_token_in_redis(
-            self, token: str, user_agent: str
-    ):
+    def save_refresh_token_in_redis(self, token: str, user_agent: str):
         """Save refresh token in Redis db."""
         token_payload = decode_token(token)
-        user_id = token_payload.get('sub')
-        expired = token_payload.get('exp')
+        user_id = token_payload.get("sub")
+        expired = token_payload.get("exp")
         expired_seconds_time = int(expired - time.time())
 
         redis_db.setex(
-            name=f'{user_id}:{user_agent}',
-            time=expired_seconds_time,
-            value=token
+            name=f"{user_id}:{user_agent}", time=expired_seconds_time, value=token
         )
 
     def delete_all_refresh_tokens(self, user_id: str):
         """Delete all refresh user tokens from redis db."""
-        keys = redis_db.keys(f'*{user_id}*')
+        keys = redis_db.keys(f"*{user_id}*")
         if keys:
             redis_db.delete(*keys)
 
     def delete_user_refresh_token(self, user_id: str, user_agent: str):
         """Delete user refresh token from Redis db."""
-        redis_db.delete(f'{user_id}:{user_agent}')
+        redis_db.delete(f"{user_id}:{user_agent}")
 
     def get_jwt_tokens(self, user: User) -> dict:
         """Get access and refresh tokens for authenticate user."""
@@ -69,11 +64,13 @@ class AuthService:
             permissions |= role.permissions
         permissions = {"perms": permissions}
 
-        access_token = create_access_token(identity=user.id, additional_claims=permissions)
+        access_token = create_access_token(
+            identity=user.id, additional_claims=permissions
+        )
         refresh_token = create_refresh_token(identity=user.id)
         return {
-            'access': access_token,
-            'refresh': refresh_token,
+            "access": access_token,
+            "refresh": refresh_token,
         }
 
     def create_user_auth_log(self, user_id: str, device: str):
@@ -86,25 +83,22 @@ class AuthService:
         """Get user login history information."""
         user_auth_logs = AuthorizationUserLog.query.filter_by(user_id=user_id)
         auth_user_log_schema = AuthUserLogSchema(
-            many=True, only=('device', 'logged_at')
+            many=True, only=("device", "logged_at")
         )
         return auth_user_log_schema.dump(user_auth_logs)
 
     def refresh_jwt_tokens(self, user_id: str, user_agent: str) -> Optional[dict]:
         """Get user refresh token from Redis db."""
-        token_in_redis: Optional[bytes] = redis_db.get(
-            f'{user_id}:{user_agent}')
+        token_in_redis: Optional[bytes] = redis_db.get(f"{user_id}:{user_agent}")
         if token_in_redis:
-            self.delete_user_refresh_token(
-                user_id=user_id, user_agent=user_agent)
+            self.delete_user_refresh_token(user_id=user_id, user_agent=user_agent)
             user = User.query.filter_by(id=user_id).first_or_404()
-            jwt_tokens: Optional[dict] = self.get_jwt_tokens(
-                user=user)
+            jwt_tokens: Optional[dict] = self.get_jwt_tokens(user=user)
             return jwt_tokens
 
     def _change_password(
-            self, user: User,
-            old_password: str, new_password: str) -> Optional[bool]:
+        self, user: User, old_password: str, new_password: str
+    ) -> Optional[bool]:
         """Change password for user."""
         is_correct_password = verify_password(old_password, user.password)
         if not is_correct_password:
@@ -126,8 +120,8 @@ class AuthService:
         return True
 
     def change_user_credentials(
-            self, user_id, credential_type: str,
-            old_credential, new_credential):
+        self, user_id, credential_type: str, old_credential, new_credential
+    ):
         """Change credentials for user - password or email."""
         user = User.query.filter_by(id=user_id).first_or_404()
         if credential_type == CredentialType.EMAIL.value:

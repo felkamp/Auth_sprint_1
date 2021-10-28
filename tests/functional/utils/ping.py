@@ -1,8 +1,8 @@
+import logging
 import os
 import socket
 import sys
 import time
-import logging
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,9 +25,11 @@ def ping(host: str, port: int, max_number_of_attempts: int = 10) -> bool:
 
 
 def main() -> int:
-    has_errors = ping(os.getenv('REDIS_HOST', 'redis'), int(os.getenv('REDIS_PORT', 6379)))
+    has_errors = ping(
+        os.getenv("REDIS_HOST", "redis"), int(os.getenv("REDIS_PORT", 6379))
+    )
     return int(has_errors)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

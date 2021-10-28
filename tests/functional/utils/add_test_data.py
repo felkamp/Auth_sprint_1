@@ -1,7 +1,8 @@
-from tests.functional.test_data.data import users, roles
-from src.models.user import User, Role
-from src.db.postgres import db
 from sqlalchemy.exc import IntegrityError
+
+from src.db.postgres import db
+from src.models.user import Role, User
+from tests.functional.test_data.data import roles, users
 
 
 def _save_obj(obj):
@@ -21,10 +22,10 @@ def add_test_data() -> None:
 
     for user in users:
         u = User(**user)
-        role = roles_dict.get(u.email.split('@')[0])
+        role = roles_dict.get(u.email.split("@")[0])
         u.roles.append(role)
         _save_obj(u)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     add_test_data()

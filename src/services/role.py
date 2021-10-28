@@ -1,12 +1,15 @@
-from src.models.user import Role
 from typing import Optional
-from src.db.postgres import db
+
 from sqlalchemy import func
+
+from src.db.postgres import db
+from src.models.user import Role
 
 
 class RoleService:
-
-    def add_role(self, role_name: str, permissions: int, description: Optional[str]) -> None:
+    def add_role(
+        self, role_name: str, permissions: int, description: Optional[str]
+    ) -> None:
         role = Role(name=role_name, permissions=permissions, description=description)
         db.session.add(role)
         db.session.commit()

@@ -1,5 +1,6 @@
 import redis
 from flask import Flask
+
 from src.config import RedisSettings
 
 redis_db = redis.Redis(
@@ -10,6 +11,6 @@ redis_db = redis.Redis(
 
 
 def init_redis_db(app: Flask):
-    if not hasattr(app, 'redis_db'):
+    if not hasattr(app, "redis_db"):
         app.redis_db = redis_db
     return app.redis_db
