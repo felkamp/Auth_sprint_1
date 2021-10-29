@@ -1,10 +1,11 @@
 import time
 from typing import Optional
 
-from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                decode_token)
 from flask_security.utils import hash_password, verify_password
-from marshmallow import Schema, fields
 from loguru import logger
+from marshmallow import Schema, fields
 
 from src.constants import CredentialType
 from src.db.postgres import db
@@ -137,7 +138,9 @@ class AuthService:
         db.session.commit()
         return True, ""
 
-    def change_user_credentials(self, user, credential_type: str, old_credential, new_credential):
+    def change_user_credentials(
+        self, user, credential_type: str, old_credential, new_credential
+    ):
         """Change credentials for user - password or email."""
         if credential_type == CredentialType.EMAIL.value:
             return self._change_email(user, new_credential)

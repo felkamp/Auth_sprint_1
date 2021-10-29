@@ -6,17 +6,14 @@ from flask_jwt_extended import get_jwt, jwt_required
 from flask_restx import Api, Resource, reqparse
 from flask_security.registerable import register_user
 
-from src.models.user import USER_DATASTORE
+from src.models.user import USER_DATASTORE, User
 from src.services.auth import auth_service
-from src.models.user import User
 
 account = Blueprint("account", __name__)
 api = Api(account)
 
 login_post_parser = reqparse.RequestParser()
-login_post_parser.add_argument(
-    "email", required=True, help="Email cannot be blank!"
-)
+login_post_parser.add_argument("email", required=True, help="Email cannot be blank!")
 login_post_parser.add_argument(
     "password", required=True, help="Password cannot be blank!"
 )
@@ -137,9 +134,7 @@ class Logout(Resource):
 
 
 register_post_parser = reqparse.RequestParser()
-register_post_parser.add_argument(
-    "email", required=True, help="Email cannot be blank!"
-)
+register_post_parser.add_argument("email", required=True, help="Email cannot be blank!")
 register_post_parser.add_argument(
     "password", required=True, help="Password cannot be blank!"
 )

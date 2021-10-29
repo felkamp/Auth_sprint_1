@@ -28,7 +28,9 @@ roles_list_get_parser.add_argument("size", required=True, type=int, location="ar
 
 roles_list_post_parser = reqparse.RequestParser(bundle_errors=True)
 roles_list_post_parser.add_argument("name", required=True, location="form")
-roles_list_post_parser.add_argument("permissions", required=True, type=int, location="form")
+roles_list_post_parser.add_argument(
+    "permissions", required=True, type=int, location="form"
+)
 roles_list_post_parser.add_argument("description", required=False)
 
 
