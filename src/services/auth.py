@@ -1,10 +1,11 @@
 import time
 from typing import Optional
 
-from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from flask_jwt_extended import (create_access_token, create_refresh_token,
+                                decode_token)
 from flask_security.utils import hash_password, verify_password
-from marshmallow import Schema, fields
 from loguru import logger
+from marshmallow import Schema, fields
 
 from src.constants import CredentialType
 from src.db.postgres import db
@@ -84,8 +85,8 @@ class AuthService:
             db.session.commit()
         except Exception as error:
             logger.error(
-                f'When saving the user authorization log,'
-                f' the following error occurred - {error}'
+                f"When saving the user authorization log,"
+                f" the following error occurred - {error}"
             )
 
     def get_auth_user_logs(self, user_id: str):
@@ -116,13 +117,13 @@ class AuthService:
         """
         is_correct_password = verify_password(old_password, user.password)
         if not is_correct_password:
-            return False, 'Incorrect user password.'
+            return False, "Incorrect user password."
         if len(new_password) < 8:
-            return False, 'Incorrect new password length. Must be more then 7.'
+            return False, "Incorrect new password length. Must be more then 7."
 
         user.password = hash_password(new_password)
         db.session.commit()
-        return True, ''
+        return True, ""
 
     def _change_email(self, user, new_email) -> tuple:
         """Change login for user.
@@ -132,12 +133,14 @@ class AuthService:
         """
         user_with_new_email = User.query.filter_by(email=new_email).first()
         if user_with_new_email:
-            return False, 'User with new email already exists.'
+            return False, "User with new email already exists."
         user.email = new_email
         db.session.commit()
-        return True, ''
+        return True, ""
 
-    def change_user_credentials(self, user, credential_type: str, old_credential, new_credential):
+    def change_user_credentials(
+        self, user, credential_type: str, old_credential, new_credential
+    ):
         """Change credentials for user - password or email."""
         if credential_type == CredentialType.EMAIL.value:
             return self._change_email(user, new_credential)
