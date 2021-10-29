@@ -4,6 +4,7 @@ from typing import Optional
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from flask_security.utils import hash_password, verify_password
 from marshmallow import Schema, fields
+from loguru import logger
 
 from src.constants import CredentialType
 from src.db.postgres import db
@@ -77,9 +78,15 @@ class AuthService:
 
     def create_user_auth_log(self, user_id: str, device: str):
         """Create AuthorizationUserLog record after successful user auth."""
-        auth_log = AuthorizationUserLog(user_id=user_id, device=device)
-        db.session.add(auth_log)
-        db.session.commit()
+        try:
+            auth_log = AuthorizationUserLog(user_id=user_id, device=device)
+            db.session.add(auth_log)
+            db.session.commit()
+        except Exception as error:
+            logger.error(
+                f'When saving the user authorization log,'
+                f' the following error occurred - {error}'
+            )
 
     def get_auth_user_logs(self, user_id: str):
         """Get user login history information."""
@@ -101,36 +108,37 @@ class AuthService:
 
     def _change_password(
         self, user: User, old_password: str, new_password: str
-    ) -> Optional[bool]:
-        """Change password for user."""
+    ) -> tuple:
+        """Change password for user.
+
+        If it was failed to change the password,
+        return False and an error message.
+        """
         is_correct_password = verify_password(old_password, user.password)
         if not is_correct_password:
-            return False
+            return False, 'Incorrect user password.'
         if len(new_password) < 8:
-            return False
+            return False, 'Incorrect new password length. Must be more then 7.'
 
         user.password = hash_password(new_password)
         db.session.commit()
-        return True
+        return True, ''
 
-    def _change_email(self, user: User, new_email: str) -> Optional[bool]:
-        """Change login for user."""
+    def _change_email(self, user, new_email) -> tuple:
+        """Change login for user.
+
+        If it was failed to change the email,
+        return False and an error message.
+        """
         user_with_new_email = User.query.filter_by(email=new_email).first()
         if user_with_new_email:
-            return False
+            return False, 'User with new email already exists.'
         user.email = new_email
         db.session.commit()
-        return True
+        return True, ''
 
-    def change_user_credentials(
-        self,
-        user_id: str,
-        credential_type: str,
-        old_credential: str,
-        new_credential: str,
-    ) -> bool:
+    def change_user_credentials(self, user, credential_type: str, old_credential, new_credential):
         """Change credentials for user - password or email."""
-        user = User.query.filter_by(id=user_id).first_or_404()
         if credential_type == CredentialType.EMAIL.value:
             return self._change_email(user, new_credential)
         if credential_type == CredentialType.PASSWORD.value:

@@ -8,6 +8,7 @@ from flask_security.registerable import register_user
 
 from src.models.user import USER_DATASTORE
 from src.services.auth import auth_service
+from src.models.user import User
 
 account = Blueprint("account", __name__)
 api = Api(account)
@@ -98,15 +99,15 @@ class CredentialsChange(Resource):
 
         token_payload = get_jwt()
         user_id = token_payload.get("sub")
-
-        is_credential_chaged = auth_service.change_user_credentials(
-            user_id,
+        user = User.query.filter_by(id=user_id).first_or_404()
+        is_credential_changed, error = auth_service.change_user_credentials(
+            user,
             credential_type,
             old_credential,
             new_credential,
         )
-        if not is_credential_chaged:
-            return abort(HTTPStatus.BAD_REQUEST, "Credentials are incorrect.")
+        if not is_credential_changed:
+            return abort(HTTPStatus.BAD_REQUEST, error)
         return {"msg": "Credentials changed successfully."}
 
 
