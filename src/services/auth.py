@@ -1,8 +1,7 @@
 import time
 from typing import Optional
 
-from flask_jwt_extended import (create_access_token, create_refresh_token,
-                                decode_token)
+from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from flask_security.utils import hash_password, verify_password
 from marshmallow import Schema, fields
 from loguru import logger
@@ -37,16 +36,18 @@ class AuthService:
             return None
         return user
 
+    def redis_key(self, user_id: str, user_agent: str) -> str:
+        """Key template for redis db."""
+        return f"{user_id}:{user_agent}"
+
     def save_refresh_token_in_redis(self, token: str, user_agent: str):
         """Save refresh token in Redis db."""
         token_payload = decode_token(token)
         user_id = token_payload.get("sub")
         expired = token_payload.get("exp")
         expired_seconds_time = int(expired - time.time())
-
-        redis_db.setex(
-            name=f"{user_id}:{user_agent}", time=expired_seconds_time, value=token
-        )
+        redis_key: str = self.redis_key(user_id=user_id, user_agent=user_agent)
+        redis_db.setex(name=redis_key, time=expired_seconds_time, value=token)
 
     def delete_all_refresh_tokens(self, user_id: str):
         """Delete all refresh user tokens from redis db."""
@@ -56,7 +57,8 @@ class AuthService:
 
     def delete_user_refresh_token(self, user_id: str, user_agent: str):
         """Delete user refresh token from Redis db."""
-        redis_db.delete(f"{user_id}:{user_agent}")
+        redis_key: str = self.redis_key(user_id=user_id, user_agent=user_agent)
+        redis_db.delete(redis_key)
 
     def get_jwt_tokens(self, user: User) -> dict:
         """Get access and refresh tokens for authenticate user."""
@@ -96,7 +98,8 @@ class AuthService:
 
     def refresh_jwt_tokens(self, user_id: str, user_agent: str) -> Optional[dict]:
         """Get user refresh token from Redis db."""
-        token_in_redis: Optional[bytes] = redis_db.get(f"{user_id}:{user_agent}")
+        redis_key: str = self.redis_key(user_id=user_id, user_agent=user_agent)
+        token_in_redis: Optional[bytes] = redis_db.get(redis_key)
         if token_in_redis:
             self.delete_user_refresh_token(user_id=user_id, user_agent=user_agent)
             user = User.query.filter_by(id=user_id).first_or_404()
@@ -134,9 +137,7 @@ class AuthService:
         db.session.commit()
         return True, ''
 
-    def change_user_credentials(
-        self, user, credential_type: str, old_credential, new_credential
-    ):
+    def change_user_credentials(self, user, credential_type: str, old_credential, new_credential):
         """Change credentials for user - password or email."""
         if credential_type == CredentialType.EMAIL.value:
             return self._change_email(user, new_credential)
