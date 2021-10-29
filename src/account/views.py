@@ -13,28 +13,25 @@ from src.models.user import User
 account = Blueprint("account", __name__)
 api = Api(account)
 
+login_post_parser = reqparse.RequestParser()
+login_post_parser.add_argument(
+    "email", required=True, help="Email cannot be blank!"
+)
+login_post_parser.add_argument(
+    "password", required=True, help="Password cannot be blank!"
+)
+login_post_parser.add_argument("User-Agent", location="headers")
+
 
 @api.route("/login")
 class Login(Resource):
     """Endpoint to user login."""
 
+    @api.expect(login_post_parser)
     def post(self):
         """Check user credentials and get JWT token for user."""
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "email",
-            required=True,
-            type=str,
-            help="Email cannot be blank!",
-        )
-        parser.add_argument(
-            "password",
-            required=True,
-            type=str,
-            help="Password cannot be blank!",
-        )
-        parser.add_argument("User-Agent", location="headers")
-        args = parser.parse_args()
+
+        args = login_post_parser.parse_args()
 
         error_message = "Email or password is incorrect"
 
@@ -68,31 +65,26 @@ class LoginHistory(Resource):
         return user_logs
 
 
+credentials_change_put = reqparse.RequestParser()
+credentials_change_put.add_argument(
+    "credential_type", required=True, help="Type to change"
+)
+credentials_change_put.add_argument(
+    "old", required=True, help="Current credential cannot be blank!"
+)
+credentials_change_put.add_argument(
+    "new", required=True, help="New credential cannot be blank!"
+)
+
+
 @api.route("/account_credentials")
 class CredentialsChange(Resource):
+    @api.expect(credentials_change_put)
     @jwt_required()
     def put(self):
         """Endpoint to change user credentials email or password."""
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "credential_type",
-            required=True,
-            type=str,
-            help="Credential type to change!",
-        )
-        parser.add_argument(
-            "old",
-            required=True,
-            type=str,
-            help="Current credential cannot be blank!",
-        )
-        parser.add_argument(
-            "new",
-            required=True,
-            type=str,
-            help="New credential cannot be blank!",
-        )
-        args = parser.parse_args()
+
+        args = credentials_change_put.parse_args()
         credential_type = args.get("credential_type")
         old_credential = args.get("old")
         new_credential = args.get("new")
@@ -111,25 +103,25 @@ class CredentialsChange(Resource):
         return {"msg": "Credentials changed successfully."}
 
 
+logout_post_parser = reqparse.RequestParser()
+logout_post_parser.add_argument("User-Agent", location="headers")
+logout_post_parser.add_argument(
+    "is_full", required=False, type=bool, help="Logout from all accounts!"
+)
+
+
 @api.route("/logout")
 class Logout(Resource):
     """Endpoint to user logout."""
 
+    @api.expect(logout_post_parser)
     @jwt_required()
     def post(self):
         """Logout user with deleting refresh tokens.
 
         If 'is_full' request param exists, then delete all refresh tokens.
         """
-        parser = reqparse.RequestParser()
-        parser.add_argument("User-Agent", location="headers")
-        parser.add_argument(
-            "is_full",
-            required=False,
-            type=bool,
-            help="Logout from all accounts!",
-        )
-        args = parser.parse_args()
+        args = logout_post_parser.parse_args()
 
         token_payload = get_jwt()
 
@@ -144,26 +136,23 @@ class Logout(Resource):
         }
 
 
+register_post_parser = reqparse.RequestParser()
+register_post_parser.add_argument(
+    "email", required=True, help="Email cannot be blank!"
+)
+register_post_parser.add_argument(
+    "password", required=True, help="Password cannot be blank!"
+)
+
+
 @api.route("/register")
 class Register(Resource):
     """Endpoint to sign up."""
 
+    @api.expect(register_post_parser)
     def post(self):
         """Register a new user."""
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "email",
-            required=True,
-            type=str,
-            help="Email cannot be blank!",
-        )
-        parser.add_argument(
-            "password",
-            required=True,
-            type=str,
-            help="Password cannot be blank!",
-        )
-        args = parser.parse_args()
+        args = register_post_parser.parse_args()
         email = args.get("email")
         password = args.get("password")
 
@@ -175,17 +164,21 @@ class Register(Resource):
         }
 
 
+refresh_post_parser = reqparse.RequestParser()
+refresh_post_parser.add_argument("User-Agent", location="headers")
+refresh_post_parser.add_argument("Authorization", location="headers")
+
+
 @api.route("/refresh")
 class Refresh(Resource):
     """Endpoint to refresh JWT tokens."""
 
+    @api.expect(refresh_post_parser)
     @jwt_required(refresh=True)
     def post(self):
         """Create new pair of access and refresh JWT tokens for user."""
-        parser = reqparse.RequestParser()
-        parser.add_argument("User-Agent", location="headers")
-        parser.add_argument("Authorization", location="headers")
-        args = parser.parse_args()
+
+        args = refresh_post_parser.parse_args()
 
         user_agent: str = args.get("User-Agent")
 

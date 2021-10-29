@@ -22,32 +22,35 @@ role_response_model = api.model(
     },
 )
 
+roles_list_get_parser = reqparse.RequestParser(bundle_errors=True)
+roles_list_get_parser.add_argument("page", required=True, type=int, location="args")
+roles_list_get_parser.add_argument("size", required=True, type=int, location="args")
+
+roles_list_post_parser = reqparse.RequestParser(bundle_errors=True)
+roles_list_post_parser.add_argument("name", required=True, location="form")
+roles_list_post_parser.add_argument("permissions", required=True, type=int, location="form")
+roles_list_post_parser.add_argument("description", required=False)
+
 
 @api.route("/roles")
 class RolesList(Resource):
     """Shows a list of all roles, and lets you POST to add new role"""
 
+    @api.expect(roles_list_get_parser)
     @api.marshal_with(role_response_model, code=HTTPStatus.OK, as_list=True)
     @jwt_required()
     @check_permission(Permission.VIEW)
     def get(self):
         """List all roles."""
-        parser = reqparse.RequestParser(bundle_errors=True)
-        parser.add_argument("page", required=True, type=int, location="args")
-        parser.add_argument("size", required=True, type=int, location="args")
-        args = parser.parse_args()
-
+        args = roles_list_get_parser.parse_args()
         return role_service.get_roles(page=args.get("page"), size=args.get("size"))
 
+    @api.expect(roles_list_post_parser)
     @jwt_required()
     @check_permission(Permission.CREATE)
     def post(self):
         """Create a new role."""
-        parser = reqparse.RequestParser(bundle_errors=True)
-        parser.add_argument("name", required=True, location="form")
-        parser.add_argument("permissions", required=True, type=int, location="form")
-        parser.add_argument("description", required=False)
-        args = parser.parse_args()
+        args = roles_list_post_parser.parse_args()
         name = args.get("name")
         permissions = args.get("permissions")
         description = args.get("description")
@@ -59,6 +62,12 @@ class RolesList(Resource):
             role_name=name, permissions=permissions, description=description
         )
         return {"msg": "Role created!"}
+
+
+role_detail_put_parser = reqparse.RequestParser()
+role_detail_put_parser.add_argument("name", required=False)
+role_detail_put_parser.add_argument("permissions", type=int, required=False)
+role_detail_put_parser.add_argument("description", required=False)
 
 
 @api.route("/role/<string:id>")
@@ -75,15 +84,13 @@ class RoleDetail(Resource):
         """Get role by id."""
         return Role.query.filter_by(id=id).first_or_404()
 
+    @api.expect(role_detail_put_parser)
     @jwt_required()
     @check_permission(Permission.UPDATE)
     def put(self, id):
         """Update role by id."""
-        parser = reqparse.RequestParser()
-        parser.add_argument("name", required=False)
-        parser.add_argument("permissions", type=int, required=False)
-        parser.add_argument("description", required=False)
-        args = parser.parse_args()
+
+        args = role_detail_put_parser.parse_args()
 
         if not (role := role_service.get_role_by_id(id=id)):
             return abort(HTTPStatus.NOT_FOUND, "Not Found!")
@@ -112,19 +119,23 @@ class RoleDetail(Resource):
         return {"msg": "Role deleted!"}
 
 
+user_role_post_parser = reqparse.RequestParser(bundle_errors=True)
+user_role_post_parser.add_argument("role_id", required=True, location="form")
+
+
 @api.route("/user/<string:user_id>/roles")
 class UserRole(Resource):
     """
-    Lets you PUT to add a new role for user
+    Lets you POST to add a new role for user
     """
 
+    @api.expect(user_role_post_parser)
     @jwt_required()
     @check_permission(Permission.CREATE)
     def post(self, user_id):
         """Add a new user role."""
-        parser = reqparse.RequestParser(bundle_errors=True)
-        parser.add_argument("role_id", required=True, location="form")
-        args = parser.parse_args()
+
+        args = user_role_post_parser.parse_args()
         role_id = args.get("role_id")
         user = User.query.filter_by(id=user_id).first_or_404()
         role = Role.query.filter_by(id=role_id).first_or_404()
